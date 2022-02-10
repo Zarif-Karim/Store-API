@@ -1,23 +1,42 @@
-const { query } = require('express');
 const Product = require('../models/products');
 
 const get_all_products = async (req,res) => {
+    console.log(req.query);
     const queryObject = {};
     const {
         name,
         price,
         rating,
         featured,
-        company
+        company,
+        sort,
+        fields
     } = req.query;
 
-    if(name) queryObject.name = name;
+    if(name) queryObject.name = {$regex: name, $options: 'i'};
     if(price) queryObject.price = Number(price);
     if(rating) queryObject.rating = Number(rating);
     if(featured) queryObject.featured = featured === 'true' ? true : false;
-    if(company) queryObject.company = company;
+    if(company) queryObject.company = {$regex: company, $options: 'i'};
+    
+    let products = Product.find(queryObject);
+    
+    if(sort) {
+        const sortQuery = sort.split(',').join(' ');
+        products = products.sort(sortQuery);
+    }
+    if(fields){
+        const fieldsQuery = fields.split(',').join(' ');
+        products = products.select(fieldsQuery);
+    }
 
-    const products = await Product.find(queryObject);
+    const limit = Number(req.query.limit) || 10;
+    const page = Number(req.query.page) || 1;
+    const skip = (page - 1) * limit;
+
+    products = products.limit(limit).skip(skip);
+    
+    products = await products;
     res.status(200).json({ 
         request: "all products", 
         query: req.query,
