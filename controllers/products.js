@@ -1,7 +1,29 @@
+const { query } = require('express');
+const Product = require('../models/products');
 
 const get_all_products = async (req,res) => {
-    const products = [{id: 1, name: "dummy Product"},{id: 2, name: "dummy Product2"}];
-    res.status(200).json({ request : "all products", products });
+    const queryObject = {};
+    const {
+        name,
+        price,
+        rating,
+        featured,
+        company
+    } = req.query;
+
+    if(name) queryObject.name = name;
+    if(price) queryObject.price = Number(price);
+    if(rating) queryObject.rating = Number(rating);
+    if(featured) queryObject.featured = featured === 'true' ? true : false;
+    if(company) queryObject.company = company;
+
+    const products = await Product.find(queryObject);
+    res.status(200).json({ 
+        request: "all products", 
+        query: req.query,
+        nHits: products.length,
+        products 
+    });
 }
 
 const add_product = async (req,res) => {
