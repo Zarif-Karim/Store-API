@@ -17,8 +17,13 @@ const initiate = async () => {
         //add new list of products
         await productModel.create(productList);
         console.log('Created List of Products');
+
+        //exit success
+        process.exit(0);
     } catch (error) {
         console.log(error);
+        //exit error
+        process.exit(1);
     }
 };
 
