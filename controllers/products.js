@@ -1,7 +1,23 @@
 const Product = require('../models/products');
 
+const numeric_filter_util = (filters) => {
+    const operator_map = {
+        '<' : '$lt',
+        '<=': '$lte',
+        '=' : '$eq',
+        '>=': '$gte',
+        '>' : '$gt'
+    };
+    const regex = /\b(<|<=|=|>=|>)\b/g;
+    filters = filters.replace(regex, (match)=>`-${operator_map[match]}-`);
+    filters = filters.split(',');
+    filters.forEach((filter,index) => filters[index] = filter.split('-'));
+
+    return filters;
+}
+
 const get_all_products = async (req,res) => {
-    console.log(req.query);
+    //console.log(req.query);
     const queryObject = {};
     const {
         name,
@@ -10,7 +26,8 @@ const get_all_products = async (req,res) => {
         featured,
         company,
         sort,
-        fields
+        fields,
+        numericFilters
     } = req.query;
 
     if(name) queryObject.name = {$regex: name, $options: 'i'};
@@ -18,7 +35,19 @@ const get_all_products = async (req,res) => {
     if(rating) queryObject.rating = Number(rating);
     if(featured) queryObject.featured = featured === 'true' ? true : false;
     if(company) queryObject.company = {$regex: company, $options: 'i'};
+    if(numericFilters){
+        const filters = numeric_filter_util(numericFilters);
+        //fields allowed for numeric filters
+        const allowed_fields = ['price','rating'];
+        filters.forEach(([field,operator,value]) => {
+            if(allowed_fields.includes(field)){
+                console.log(field,operator,value);
+                queryObject[field] = { [operator] : Number(value) };
+            }
+        });
+    }
     
+    console.log(queryObject);
     let products = Product.find(queryObject);
     
     if(sort) {
